@@ -178,7 +178,11 @@ func create(ctx *context.Context, arch config.Archive, binaries []*artifact.Arti
 	if err != nil {
 		return err
 	}
-	archivePath := filepath.Join(ctx.Config.Dist, folder+"."+format)
+	ext := format
+	if format == "makeself" {
+		ext = "run"
+	}
+	archivePath := filepath.Join(ctx.Config.Dist, folder+"."+ext)
 	lock.Lock()
 	if err := os.MkdirAll(filepath.Dir(archivePath), 0o755|os.ModeDir); err != nil {
 		lock.Unlock()
@@ -203,7 +207,72 @@ func create(ctx *context.Context, arch config.Archive, binaries []*artifact.Arti
 	if err != nil {
 		return err
 	}
-	a, err := archive.New(archiveFile, format)
+	var a archive.Archive
+	if format == "makeself" {
+		// Apply makeself-specific configuration
+		options := make([]archive.MakeselfOption, 0)
+		
+		// Apply label if provided
+		if arch.Makeself.Label != "" {
+			label, err := template.Apply(arch.Makeself.Label)
+			if err != nil {
+				return fmt.Errorf("failed to apply makeself label template: %w", err)
+			}
+			options = append(options, archive.WithMakeselfLabel(label))
+		}
+		
+		// Apply install script if provided
+		if arch.Makeself.InstallScriptFile != "" {
+			scriptFile, err := template.Apply(arch.Makeself.InstallScriptFile)
+			if err != nil {
+				return fmt.Errorf("failed to apply makeself install script file template: %w", err)
+			}
+			options = append(options, archive.WithMakeselfScriptFile(scriptFile))
+		} else if arch.Makeself.InstallScript != "" {
+			script, err := template.Apply(arch.Makeself.InstallScript)
+			if err != nil {
+				return fmt.Errorf("failed to apply makeself install script template: %w", err)
+			}
+			options = append(options, archive.WithMakeselfScript(script))
+		}
+		
+		// Apply compression setting
+		if arch.Makeself.NoCompression {
+			options = append(options, archive.WithMakeselfNoCompression())
+		}
+		
+		// Apply extra arguments
+		if len(arch.Makeself.ExtraArgs) > 0 {
+			extraArgs := make([]string, len(arch.Makeself.ExtraArgs))
+			for i, arg := range arch.Makeself.ExtraArgs {
+				processedArg, err := template.Apply(arg)
+				if err != nil {
+					return fmt.Errorf("failed to apply makeself extra arg template: %w", err)
+				}
+				extraArgs[i] = processedArg
+			}
+			options = append(options, archive.WithMakeselfExtraArgs(extraArgs...))
+		}
+		
+		// LSM support: template and pass through
+		if arch.Makeself.LSMFile != "" {
+			lsmFile, err := template.Apply(arch.Makeself.LSMFile)
+			if err != nil {
+				return fmt.Errorf("failed to apply makeself lsm_file template: %w", err)
+			}
+			options = append(options, archive.WithMakeselfLSMFile(lsmFile))
+		}
+		if arch.Makeself.LSMTemplate != "" {
+			lsmContent, err := template.Apply(arch.Makeself.LSMTemplate)
+			if err != nil {
+				return fmt.Errorf("failed to apply makeself lsm_template: %w", err)
+			}
+			options = append(options, archive.WithMakeselfLSMTemplate(lsmContent))
+		}
+		a, err = archive.NewWithOptions(archiveFile, format, archivePath, options...)
+	} else {
+		a, err = archive.New(archiveFile, format)
+	}
 	if err != nil {
 		return err
 	}
@@ -239,7 +308,7 @@ func create(ctx *context.Context, arch config.Archive, binaries []*artifact.Arti
 	}
 	art := &artifact.Artifact{
 		Type: artifact.UploadableArchive,
-		Name: folder + "." + format,
+		Name: folder + "." + ext,
 		Path: archivePath,
 		Extra: map[string]any{
 			artifact.ExtraID:        arch.ID,

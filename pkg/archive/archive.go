@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/goreleaser/goreleaser/v2/pkg/archive/gzip"
+	"github.com/goreleaser/goreleaser/v2/pkg/archive/makeself"
 	"github.com/goreleaser/goreleaser/v2/pkg/archive/tar"
 	"github.com/goreleaser/goreleaser/v2/pkg/archive/targz"
 	"github.com/goreleaser/goreleaser/v2/pkg/archive/tarxz"
@@ -14,6 +15,58 @@ import (
 	"github.com/goreleaser/goreleaser/v2/pkg/archive/zip"
 	"github.com/goreleaser/goreleaser/v2/pkg/config"
 )
+
+// MakeselfOption represents a configuration option for makeself archives.
+type MakeselfOption func(*makeself.MakeselfConfig)
+
+// WithMakeselfLabel sets a custom label for the makeself archive.
+func WithMakeselfLabel(label string) MakeselfOption {
+	return func(cfg *makeself.MakeselfConfig) {
+		cfg.Label = label
+	}
+}
+
+// WithMakeselfScript sets a custom installation script content.
+func WithMakeselfScript(script string) MakeselfOption {
+	return func(cfg *makeself.MakeselfConfig) {
+		cfg.InstallScript = script
+	}
+}
+
+// WithMakeselfScriptFile sets a path to a custom installation script file.
+func WithMakeselfScriptFile(scriptFile string) MakeselfOption {
+	return func(cfg *makeself.MakeselfConfig) {
+		cfg.InstallScriptFile = scriptFile
+	}
+}
+
+// WithMakeselfNoCompression disables compression for the makeself archive.
+func WithMakeselfNoCompression() MakeselfOption {
+	return func(cfg *makeself.MakeselfConfig) {
+		cfg.NoCompression = true
+	}
+}
+
+// WithMakeselfExtraArgs adds extra command line arguments to the makeself command.
+func WithMakeselfExtraArgs(args ...string) MakeselfOption {
+	return func(cfg *makeself.MakeselfConfig) {
+		cfg.ExtraArgs = append(cfg.ExtraArgs, args...)
+	}
+}
+
+// WithMakeselfLSMTemplate sets an inline LSM content template to be used.
+func WithMakeselfLSMTemplate(content string) MakeselfOption {
+	return func(cfg *makeself.MakeselfConfig) {
+		cfg.LSMContent = content
+	}
+}
+
+// WithMakeselfLSMFile sets a path to an LSM file to be used.
+func WithMakeselfLSMFile(path string) MakeselfOption {
+	return func(cfg *makeself.MakeselfConfig) {
+		cfg.LSMFile = path
+	}
+}
 
 // Archive represents a compression archive files from disk can be written to.
 type Archive interface {
@@ -36,8 +89,26 @@ func New(w io.Writer, format string) (Archive, error) {
 		return tarzst.New(w), nil
 	case "zip":
 		return zip.New(w), nil
+	case "makeself":
+		return makeself.New(w), nil
 	}
 	return nil, fmt.Errorf("invalid archive format: %s", format)
+}
+
+// NewWithOptions creates a new archive with advanced configuration options.
+// This is currently only supported for makeself format.
+func NewWithOptions(w io.Writer, format, outputPath string, options ...MakeselfOption) (Archive, error) {
+	switch format {
+	case "makeself":
+		cfg := &makeself.MakeselfConfig{}
+		for _, opt := range options {
+			opt(cfg)
+		}
+		return makeself.NewWithConfig(w, outputPath, *cfg), nil
+	default:
+		// For non-makeself formats, ignore options and use regular New
+		return New(w, format)
+	}
 }
 
 // Copy copies the source archive into a new one, which can be appended at.
@@ -50,6 +121,8 @@ func Copy(r *os.File, w io.Writer, format string) (Archive, error) {
 		return tar.Copy(r, w)
 	case "zip":
 		return zip.Copy(r, w)
+	case "makeself":
+		return makeself.Copy(r, w)
 	}
 	return nil, fmt.Errorf("invalid archive format: %s", format)
 }

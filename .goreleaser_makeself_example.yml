@@ -1,0 +1,83 @@
+project_name: myapp
+version: 2
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: default-archives
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats:
+      - tar.gz
+    
+  - id: makeself-linux
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats:
+      - makeself
+    format_overrides:
+      - goos: linux
+        formats:
+          - makeself
+    makeself:
+      label: "{{ .ProjectName }} {{ .Version }} Installer"
+      # Optional LSM inline content
+      lsm_template: |
+        Begin4
+        Title:          {{ .ProjectName }}
+        Version:        {{ .Version }}
+        Entered-date:   {{ .Date }}
+        Description:    Example installer for {{ .ProjectName }}
+        Keywords:       example
+        Author:         Example <example@example.com>
+        Primary-site:   example.com
+        Platforms:      {{ .Os }}-{{ .Arch }}
+        Copying-policy: Proprietary
+        End
+      install_script: |
+        #!/bin/bash
+        echo "Installing {{ .ProjectName }} {{ .Version }}..."
+        mkdir -p /usr/local/bin
+        cp {{ .ProjectName }} /usr/local/bin/
+        chmod +x /usr/local/bin/{{ .ProjectName }}
+        echo "Installation completed successfully!"
+        echo "Run '{{ .ProjectName }} --help' to get started."
+      no_compression: true
+      extra_args:
+        - "--notemp"
+        - "--noprogress"
+
+  - id: makeself-with-script-file
+    name_template: "{{ .ProjectName }}_installer_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats:
+      - makeself
+    format_overrides:
+      - goos: linux
+        formats:
+          - makeself
+    makeself:
+      label: "{{ .ProjectName }} {{ .Version }} Advanced Installer"
+      install_script_file: "scripts/install.sh"
+      no_compression: false
+      extra_args:
+        - "--license"
+        - "LICENSE"
+
+release:
+  draft: true
+
+checksum:
+  name_template: 'checksums.txt'
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'

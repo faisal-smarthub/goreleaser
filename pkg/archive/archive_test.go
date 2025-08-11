@@ -3,6 +3,7 @@ package archive
 import (
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -18,8 +19,17 @@ func TestArchive(t *testing.T) {
 	require.NoError(t, empty.Close())
 	require.NoError(t, os.Mkdir(folder+"/folder-inside", 0o755))
 
-	for _, format := range []string{"tar.gz", "zip", "gz", "tar.xz", "tar", "tgz", "txz", "tar.zst", "tzst"} {
+	for _, format := range []string{"tar.gz", "zip", "gz", "tar.xz", "tar", "tgz", "txz", "tar.zst", "tzst", "makeself"} {
 		t.Run(format, func(t *testing.T) {
+			// Skip makeself test if makeself command is not available
+			if format == "makeself" {
+				// Try both makeself and makeself.sh
+				if _, err := exec.LookPath("makeself"); err != nil {
+					if _, err := exec.LookPath("makeself.sh"); err != nil {
+						t.Skip("makeself command not found, skipping makeself test")
+					}
+				}
+			}
 			f1, err := os.Create(filepath.Join(t.TempDir(), "1.tar"))
 			require.NoError(t, err)
 
@@ -36,7 +46,7 @@ func TestArchive(t *testing.T) {
 			require.NoError(t, archive.Close())
 			require.NoError(t, f1.Close())
 
-			if format == "tar.xz" || format == "txz" || format == "gz" || format == "tar.zst" || format == "tzst" {
+			if format == "tar.xz" || format == "txz" || format == "gz" || format == "tar.zst" || format == "tzst" || format == "makeself" {
 				_, err := Copy(f1, io.Discard, format)
 				require.Error(t, err)
 				return

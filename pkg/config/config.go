@@ -543,7 +543,7 @@ type Hook struct {
 // FormatOverride is used to specify a custom format for a specific GOOS.
 type FormatOverride struct {
 	Goos    string      `yaml:"goos,omitempty" json:"goos,omitempty"`
-	Formats StringArray `yaml:"formats,omitempty" json:"formats,omitempty" jsonschema:"enum=tar,enum=tgz,enum=tar.gz,enum=zip,enum=gz,enum=tar.xz,enum=txz,enum=binary,enum=none,default=tar.gz"`
+	Formats StringArray `yaml:"formats,omitempty" json:"formats,omitempty" jsonschema:"enum=tar,enum=tgz,enum=tar.gz,enum=zip,enum=gz,enum=tar.xz,enum=txz,enum=binary,enum=makeself,enum=none,default=tar.gz"`
 
 	// Deprecated: use [Formats] instead.
 	Format string `yaml:"format,omitempty" json:"format,omitempty" jsonschema:"enum=tar,enum=tgz,enum=tar.gz,enum=zip,enum=gz,enum=tar.xz,enum=txz,enum=binary,enum=none,default=tar.gz"`
@@ -591,19 +591,56 @@ type UPX struct {
 	Brute    bool     `yaml:"brute,omitempty" json:"brute,omitempty"`
 }
 
+// MakeselfConfig contains makeself-specific configuration options.
+type MakeselfConfig struct {
+	// Archive label shown in the self-extracting archive.
+	// Templates: allowed.
+	Label string `yaml:"label,omitempty" json:"label,omitempty"`
+	
+	// Custom installation script to run after extraction.
+	// If not provided, a default script will be created.
+	// Templates: allowed.
+	InstallScript string `yaml:"install_script,omitempty" json:"install_script,omitempty"`
+	
+	// Path to a script file to use as the installation script.
+	// Takes precedence over InstallScript if both are provided.
+	// Templates: allowed.
+	InstallScriptFile string `yaml:"install_script_file,omitempty" json:"install_script_file,omitempty"`
+	
+	// Disable compression for makeself archives.
+	// Default: true (no compression, good for pre-compressed binaries).
+	NoCompression bool `yaml:"no_compression,omitempty" json:"no_compression,omitempty"`
+	
+	// Additional arguments to pass to the makeself command.
+	// Templates: allowed.
+	ExtraArgs []string `yaml:"extra_args,omitempty" json:"extra_args,omitempty"`
+
+	// LSM file content template to embed as the archive LSM.
+	// Templates: allowed.
+	LSMTemplate string `yaml:"lsm_template,omitempty" json:"lsm_template,omitempty"`
+
+	// Path to an external LSM file to include.
+	// Templates: allowed.
+	LSMFile string `yaml:"lsm_file,omitempty" json:"lsm_file,omitempty"`
+}
+
 // Archive config used for the archive.
 type Archive struct {
 	ID                        string           `yaml:"id,omitempty" json:"id,omitempty"`
 	IDs                       []string         `yaml:"ids,omitempty" json:"ids,omitempty"`
 	BuildsInfo                FileInfo         `yaml:"builds_info,omitempty" json:"builds_info,omitempty"`
 	NameTemplate              string           `yaml:"name_template,omitempty" json:"name_template,omitempty"`
-	Formats                   StringArray      `yaml:"formats,omitempty" json:"formats,omitempty" jsonschema:"enum=tar,enum=tgz,enum=tar.gz,enum=zip,enum=gz,enum=tar.xz,enum=txz,enum=binary,default=tar.gz"`
+	Formats                   StringArray      `yaml:"formats,omitempty" json:"formats,omitempty" jsonschema:"enum=tar,enum=tgz,enum=tar.gz,enum=zip,enum=gz,enum=tar.xz,enum=txz,enum=binary,enum=makeself,default=tar.gz"`
 	FormatOverrides           []FormatOverride `yaml:"format_overrides,omitempty" json:"format_overrides,omitempty"`
 	WrapInDirectory           string           `yaml:"wrap_in_directory,omitempty" json:"wrap_in_directory,omitempty" jsonschema:"oneof_type=string;boolean"`
 	StripBinaryDirectory      bool             `yaml:"strip_binary_directory,omitempty" json:"strip_binary_directory,omitempty"`
 	Files                     []File           `yaml:"files,omitempty" json:"files,omitempty"`
 	Meta                      bool             `yaml:"meta,omitempty" json:"meta,omitempty"`
 	AllowDifferentBinaryCount bool             `yaml:"allow_different_binary_count,omitempty" json:"allow_different_binary_count,omitempty"`
+	
+	// Makeself-specific configuration options.
+	// Only used when format includes 'makeself'.
+	Makeself MakeselfConfig `yaml:"makeself,omitempty" json:"makeself,omitempty"`
 
 	// Deprecated: use [Formats] instead.
 	Format string `yaml:"format,omitempty" json:"format,omitempty" jsonschema:"enum=tar,enum=tgz,enum=tar.gz,enum=zip,enum=gz,enum=tar.xz,enum=txz,enum=binary,default=tar.gz"`
