@@ -77,17 +77,11 @@ jobs:
           password: ${{ secrets.GH_PAT }}
       - uses: goreleaser/goreleaser-action@v6
         with:
-          distribution: goreleaser-pro
-          version: "nightly"
-          args: release --clean --nightly -f .goreleaser-pro.yaml --timeout 60m
+          distribution: goreleaser
+          version: "~> 2"
+          args: release --clean --nightly -f .goreleaser.yaml --timeout 60m
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-          GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
-          MACOS_SIGN_P12: ${{ secrets.MACOS_SIGN_P12 }}
-          MACOS_SIGN_PASSWORD: ${{ secrets.MACOS_SIGN_PASSWORD }}
-          MACOS_NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
-          MACOS_NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
-          MACOS_NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
       - uses: actions/attest-build-provenance@v2
         with:
           subject-checksums: ./dist/checksums.txt

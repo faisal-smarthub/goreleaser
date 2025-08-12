@@ -138,25 +138,11 @@ jobs:
       - uses: goreleaser/goreleaser-action@v6
         if: ${{ startsWith(github.ref, 'refs/tags/v') }} # only on tags
         with:
-          distribution: goreleaser-pro
+          distribution: goreleaser
           version: "~> 2"
-          args: release --clean --timeout 60m -f .goreleaser-pro.yaml
+          args: release --clean --timeout 60m -f .goreleaser.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-          MASTODON_CLIENT_ID: ${{ secrets.MASTODON_CLIENT_ID }}
-          MASTODON_CLIENT_SECRET: ${{ secrets.MASTODON_CLIENT_SECRET }}
-          MASTODON_ACCESS_TOKEN: ${{ secrets.MASTODON_ACCESS_TOKEN }}
-          FURY_TOKEN: ${{ secrets.FURY_TOKEN }}
-          DISCORD_WEBHOOK_ID: ${{ secrets.DISCORD_WEBHOOK_ID }}
-          DISCORD_WEBHOOK_TOKEN: ${{ secrets.DISCORD_WEBHOOK_TOKEN }}
-          AUR_KEY: ${{ secrets.AUR_KEY }}
-          MACOS_SIGN_P12: ${{ secrets.MACOS_SIGN_P12 }}
-          MACOS_SIGN_PASSWORD: ${{ secrets.MACOS_SIGN_PASSWORD }}
-          MACOS_NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
-          MACOS_NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
-          MACOS_NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
-          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
-          GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
       - name: goreleaser-snapshot
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }} # on main
         run: |
