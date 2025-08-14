@@ -15,7 +15,7 @@ type MakeselfConfig struct {
     Label             string   `yaml:"label,omitempty" json:"label,omitempty"`
     InstallScript     string   `yaml:"install_script,omitempty" json:"install_script,omitempty"`
     InstallScriptFile string   `yaml:"install_script_file,omitempty" json:"install_script_file,omitempty"`
-    NoCompression     bool     `yaml:"no_compression,omitempty" json:"no_compression,omitempty"`
+    Compression       string   `yaml:"compression,omitempty" json:"compression,omitempty"`
     ExtraArgs         []string `yaml:"extra_args,omitempty" json:"extra_args,omitempty"`
 }
 ```
@@ -89,7 +89,7 @@ archives:
 archives:
   - formats: [makeself]
     makeself:
-      no_compression: true
+      compression: "none"  # or "gzip", "bzip2", "xz", etc.
 ```
 
 ### 🔧 Extra Arguments
@@ -159,7 +159,7 @@ archives:
         cp {{ .ProjectName }} /usr/local/bin/
         chmod +x /usr/local/bin/{{ .ProjectName }}
         echo "Installation completed successfully!"
-      no_compression: true
+      compression: "none"
       extra_args:
         - "--notemp"
         - "--noprogress"

@@ -87,9 +87,9 @@ func NewWithInstallScript(target io.Writer, installScript string) *Archive {
 type MakeselfConfig struct {
 	OutputPath        string   // Optional: override output path
 	InstallScript     string   // Optional: custom install script content
-	InstallScriptFile string   // Optional: path to custom install script file
+	InstallScriptFile string   // Optional: path to custom install script file (relative to archive contents)
 	Label             string   // Optional: custom label for the archive
-	NoCompression     bool     // Optional: disable compression (default: true for binaries)
+	Compression       string   // Optional: compression format (gzip, bzip2, xz, lzo, compress, none)
 	ExtraArgs         []string // Optional: extra command line arguments
 	// LSM support
 	LSMContent string // Optional: inline LSM content
@@ -101,7 +101,6 @@ type MakeselfOptions struct {
 	OutputPath     string // Optional: override output path
 	InstallScript  string // Optional: custom install script
 	Label          string // Optional: custom label for the archive
-	NoCompression  bool   // Optional: disable compression (default: true for binaries)
 }
 
 // NewWithOptions creates a makeself archive with custom options.
@@ -111,6 +110,7 @@ func NewWithOptions(target io.Writer, opts MakeselfOptions) *Archive {
 	// Override output path if provided
 	if opts.OutputPath != "" {
 		archive.outputPath = opts.OutputPath
+		archive.config.OutputPath = opts.OutputPath
 	}
 	
 	// Write custom install script if provided
@@ -119,6 +119,13 @@ func NewWithOptions(target io.Writer, opts MakeselfOptions) *Archive {
 		if err := os.WriteFile(installPath, []byte(opts.InstallScript), 0755); err != nil {
 			panic(fmt.Sprintf("failed to create install script: %v", err))
 		}
+		archive.config.InstallScript = opts.InstallScript
+	}
+	
+	
+	// Set label if provided
+	if opts.Label != "" {
+		archive.config.Label = opts.Label
 	}
 	
 	return archive
@@ -135,18 +142,9 @@ func NewWithConfig(target io.Writer, outputPath string, cfg MakeselfConfig) *Arc
 		archive.outputPath = outputPath
 	}
 
-	// Handle install script - file takes precedence over content
-	if cfg.InstallScriptFile != "" {
-		// Copy script file to temp directory
-		scriptContent, err := os.ReadFile(cfg.InstallScriptFile)
-		if err != nil {
-			panic(fmt.Sprintf("failed to read install script file %s: %v", cfg.InstallScriptFile, err))
-		}
-		installPath := filepath.Join(archive.tempDir, "install.sh")
-		if err := os.WriteFile(installPath, scriptContent, 0755); err != nil {
-			panic(fmt.Sprintf("failed to create install script: %v", err))
-		}
-	} else if cfg.InstallScript != "" {
+	// Handle install script - defer validation for file-based scripts
+	// File validation will happen in Close() after all files are added to archive
+	if cfg.InstallScript != "" {
 		// Use provided script content
 		installPath := filepath.Join(archive.tempDir, "install.sh")
 		if err := os.WriteFile(installPath, []byte(cfg.InstallScript), 0755); err != nil {
@@ -175,10 +173,21 @@ func (a *Archive) Close() error {
 		return fmt.Errorf("makeself command not found in PATH (tried 'makeself' and 'makeself.sh')")
 	}
 
-	// Create a basic install script if none exists
-	installScript := filepath.Join(a.tempDir, "install.sh")
-	if _, err := os.Stat(installScript); os.IsNotExist(err) {
-		installContent := `#!/bin/bash
+	// Determine the install script to use
+	var installScriptArg string
+	if a.config.InstallScriptFile != "" {
+		// Install script file path is relative to archive contents
+		scriptPath := filepath.Join(a.tempDir, a.config.InstallScriptFile)
+		if _, err := os.Stat(scriptPath); err != nil {
+			return fmt.Errorf("install script file %s not found in archive contents: %w", a.config.InstallScriptFile, err)
+		}
+		// Use relative path for makeself command
+		installScriptArg = "./" + a.config.InstallScriptFile
+	} else {
+		// Create a basic install script if none exists (for inline script or default)
+		installScript := filepath.Join(a.tempDir, "install.sh")
+		if _, err := os.Stat(installScript); os.IsNotExist(err) {
+			installContent := `#!/bin/bash
 # Default installation script for makeself archive
 # This script is executed after extraction
 
@@ -189,9 +198,11 @@ echo "Archive extracted successfully to $(pwd)"
 echo "Files:"
 find . -type f | sort
 `
-		if err := os.WriteFile(installScript, []byte(installContent), 0755); err != nil {
-			return fmt.Errorf("failed to create install script: %w", err)
+			if err := os.WriteFile(installScript, []byte(installContent), 0755); err != nil {
+				return fmt.Errorf("failed to create install script: %w", err)
+			}
 		}
+		installScriptArg = "./install.sh"
 	}
 
 	// Determine output path for makeself
@@ -230,11 +241,25 @@ find . -type f | sort
 	args := []string{"--quiet"} // Always run quietly
 	
 	// Apply compression setting
-	if a.config.NoCompression {
+	switch strings.ToLower(a.config.Compression) {
+	case "none":
 		args = append(args, "--nocomp")
-	} else {
-		// Default to no compression for consistency with existing behavior
-		args = append(args, "--nocomp")
+	case "gzip", "gz":
+		args = append(args, "--gzip")
+	case "bzip2", "bz2":
+		args = append(args, "--bzip2")
+	case "xz":
+		args = append(args, "--xz")
+	case "lzo":
+		args = append(args, "--lzo")
+	case "compress":
+		args = append(args, "--compress")
+	case "":
+		// Default: let makeself choose its default (usually gzip)
+		// No compression flag added
+	default:
+		// For unknown compression types, log a warning but continue
+		fmt.Fprintf(os.Stderr, "Warning: unknown compression format '%s', using makeself default\n", a.config.Compression)
 	}
 	
 	// Handle LSM: write or copy into temp and pass --lsm
@@ -270,8 +295,8 @@ find . -type f | sort
 	}
 	args = append(args, label)
 	
-	// Always use ./install.sh as the startup script
-	args = append(args, "./install.sh")
+	// Use the determined install script argument
+	args = append(args, installScriptArg)
 	
 	// Create the makeself archive command
 	cmd := exec.Command(makeselfCmd, args...)

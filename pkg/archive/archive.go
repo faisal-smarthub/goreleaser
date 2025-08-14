@@ -40,10 +40,12 @@ func WithMakeselfScriptFile(scriptFile string) MakeselfOption {
 	}
 }
 
-// WithMakeselfNoCompression disables compression for the makeself archive.
-func WithMakeselfNoCompression() MakeselfOption {
+
+// WithMakeselfCompression sets the compression format for the makeself archive.
+// Supported formats: gzip, bzip2, xz, lzo, compress, none
+func WithMakeselfCompression(format string) MakeselfOption {
 	return func(cfg *makeself.MakeselfConfig) {
-		cfg.NoCompression = true
+		cfg.Compression = format
 	}
 }
 

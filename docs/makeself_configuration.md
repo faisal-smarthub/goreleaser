@@ -17,7 +17,7 @@ archives:
         echo "Installing {{ .ProjectName }}..."
         # Installation commands here
       install_script_file: "scripts/custom_install.sh"
-      no_compression: true
+      compression: "none"
       extra_args:
         - "--notemp"
         - "--license"
@@ -69,11 +69,13 @@ archives:
 - **Priority**: Takes precedence over `install_script` if both are provided
 - **Example**: `"scripts/install.sh"`
 
-### `no_compression`
-- **Type**: `boolean`
-- **Description**: Disable compression for makeself archives
-- **Default**: `true` (good for pre-compressed binaries)
-- **Example**: `true`
+### `compression`
+- **Type**: `string`
+- **Description**: Compression format for makeself archives
+- **Supported formats**: `gzip`, `bzip2`, `xz`, `lzo`, `compress`, `none`
+- **Default**: `""` (makeself default, usually gzip)
+- **Templates**: Supported
+- **Examples**: `"gzip"`, `"bzip2"`, `"none"`
 
 ### `extra_args`
 - **Type**: `[]string`
@@ -116,7 +118,7 @@ archives:
     makeself:
       label: "{{ .ProjectName }} {{ .Version }} Professional Installer"
       install_script_file: "packaging/install.sh"
-      no_compression: false
+      compression: "gzip"
       extra_args:
         - "--license"
         - "LICENSE"
@@ -164,7 +166,7 @@ archives:
         
         echo "Installation completed successfully!"
         echo "Run '{{ .ProjectName }} --help' to get started."
-      no_compression: true
+      compression: "none"
 ```
 
 ## Template Variables
@@ -180,12 +182,13 @@ All makeself configuration fields support Go templates with access to the same v
 
 ## Best Practices
 
-1. **Use `no_compression: true`** for binaries that are already compressed or when you want faster extraction
-2. **Keep install scripts simple** and handle errors gracefully
-3. **Use `install_script_file`** for complex installation logic to keep your YAML clean
-4. **Test your installers** on target systems before release
-5. **Include helpful user messages** in your install scripts
-6. **Consider using `--notemp`** and `--noprogress`** extra args for cleaner output
+1. **Use `compression: "none"`** for binaries that are already compressed or when you want faster extraction
+2. **Choose appropriate compression** - `gzip` for balance, `bzip2` or `xz` for better compression, `none` for speed
+3. **Keep install scripts simple** and handle errors gracefully
+4. **Use `install_script_file`** for complex installation logic to keep your YAML clean
+5. **Test your installers** on target systems before release
+6. **Include helpful user messages** in your install scripts
+7. **Consider using `--notemp`** and `--noprogress`** extra args for cleaner output
 
 ## Integration with Existing Features
 

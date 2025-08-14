@@ -603,13 +603,16 @@ type MakeselfConfig struct {
 	InstallScript string `yaml:"install_script,omitempty" json:"install_script,omitempty"`
 	
 	// Path to a script file to use as the installation script.
+	// Path is relative to the archive contents.
 	// Takes precedence over InstallScript if both are provided.
 	// Templates: allowed.
 	InstallScriptFile string `yaml:"install_script_file,omitempty" json:"install_script_file,omitempty"`
 	
-	// Disable compression for makeself archives.
-	// Default: true (no compression, good for pre-compressed binaries).
-	NoCompression bool `yaml:"no_compression,omitempty" json:"no_compression,omitempty"`
+	// Compression format for makeself archives.
+	// Supported formats: gzip, bzip2, xz, lzo, compress, none
+	// Default: "" (makeself default, usually gzip)
+	// Templates: allowed.
+	Compression string `yaml:"compression,omitempty" json:"compression,omitempty"`
 	
 	// Additional arguments to pass to the makeself command.
 	// Templates: allowed.

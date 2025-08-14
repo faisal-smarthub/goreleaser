@@ -234,12 +234,12 @@ func TestMakeselfWithOptions(t *testing.T) {
 	mockScript := `#!/bin/bash
 # Check parameters and create output
 echo "Custom makeself called with: $@" >&2
-/usr/bin/cat > "$4" << 'EOF'
+/usr/bin/cat > "$3" << 'EOF'
 #!/bin/bash
 echo "Custom options archive"
 exit 0
 EOF
-/usr/bin/chmod +x "$4"
+/usr/bin/chmod +x "$3"
 `
 	require.NoError(t, os.WriteFile(mockMakeselfScript, []byte(mockScript), 0755))
 	

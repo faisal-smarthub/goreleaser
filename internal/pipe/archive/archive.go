@@ -237,8 +237,12 @@ func create(ctx *context.Context, arch config.Archive, binaries []*artifact.Arti
 		}
 		
 		// Apply compression setting
-		if arch.Makeself.NoCompression {
-			options = append(options, archive.WithMakeselfNoCompression())
+		if arch.Makeself.Compression != "" {
+			compression, err := template.Apply(arch.Makeself.Compression)
+			if err != nil {
+				return fmt.Errorf("failed to apply makeself compression template: %w", err)
+			}
+			options = append(options, archive.WithMakeselfCompression(compression))
 		}
 		
 		// Apply extra arguments

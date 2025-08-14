@@ -48,7 +48,7 @@ archives:
         chmod +x /usr/local/bin/{{ .ProjectName }}
         echo "Installation completed successfully!"
         echo "Run '{{ .ProjectName }} --help' to get started."
-      no_compression: true
+      compression: "none"
       extra_args:
         - "--notemp"
         - "--noprogress"
@@ -63,8 +63,8 @@ archives:
           - makeself
     makeself:
       label: "{{ .ProjectName }} {{ .Version }} Advanced Installer"
-      install_script_file: "scripts/install.sh"
-      no_compression: false
+      install_script_file: "install.sh"  # relative to archive contents
+      compression: "gzip"
       extra_args:
         - "--license"
         - "LICENSE"
