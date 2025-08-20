@@ -154,30 +154,18 @@ dockers:
       - scripts/entrypoint.sh
 
 docker_manifests:
-  - name_template: "goreleaser/goreleaser:v{{ .Version }}"
+  - name_template: "ghcr.io/faisal-smarthub/goreleaser:v{{ .Version }}"
     image_templates:
-      - "goreleaser/goreleaser:v{{ .Version }}-amd64"
-      - "goreleaser/goreleaser:v{{ .Version }}-arm64"
-  - name_template: "ghcr.io/goreleaser/goreleaser:v{{ .Version }}"
+      - "ghcr.io/faisal-smarthub/goreleaser:v{{ .Version }}-amd64"
+      - "ghcr.io/faisal-smarthub/goreleaser:v{{ .Version }}-arm64"
+  - name_template: "{{ if not .IsNightly }}ghcr.io/faisal-smarthub/goreleaser:latest{{ end }}"
     image_templates:
-      - "ghcr.io/goreleaser/goreleaser:v{{ .Version }}-amd64"
-      - "ghcr.io/goreleaser/goreleaser:v{{ .Version }}-arm64"
-  - name_template: "{{ if not .IsNightly }}goreleaser/goreleaser:latest{{ end }}"
+      - "ghcr.io/faisal-smarthub/goreleaser:v{{ .Version }}-amd64"
+      - "ghcr.io/faisal-smarthub/goreleaser:v{{ .Version }}-arm64"
+  - name_template: "{{ if .IsNightly }}ghcr.io/faisal-smarthub/goreleaser:nightly{{ end }}"
     image_templates:
-      - "goreleaser/goreleaser:v{{ .Version }}-amd64"
-      - "goreleaser/goreleaser:v{{ .Version }}-arm64"
-  - name_template: "{{ if not .IsNightly }}ghcr.io/goreleaser/goreleaser:latest{{ end }}"
-    image_templates:
-      - "ghcr.io/goreleaser/goreleaser:v{{ .Version }}-amd64"
-      - "ghcr.io/goreleaser/goreleaser:v{{ .Version }}-arm64"
-  - name_template: "{{ if .IsNightly }}goreleaser/goreleaser:nightly{{ end }}"
-    image_templates:
-      - "goreleaser/goreleaser:v{{ .Version }}-amd64"
-      - "goreleaser/goreleaser:v{{ .Version }}-arm64"
-  - name_template: "{{ if .IsNightly }}ghcr.io/goreleaser/goreleaser:nightly{{ end }}"
-    image_templates:
-      - "ghcr.io/goreleaser/goreleaser:v{{ .Version }}-amd64"
-      - "ghcr.io/goreleaser/goreleaser:v{{ .Version }}-arm64"
+      - "ghcr.io/faisal-smarthub/goreleaser:v{{ .Version }}-amd64"
+      - "ghcr.io/faisal-smarthub/goreleaser:v{{ .Version }}-arm64"
 
 archives:
   - name_template: >-
